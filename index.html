@@ -192,7 +192,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "2.0.0";
+  var APP_VERSION = "2.1.0";
   document.getElementById('version').textContent = 'v' + APP_VERSION;
 
   var circle = document.getElementById('circle');
@@ -210,7 +210,8 @@
       key: 'warmup',
       label: 'Ankommen',
       total: 20,
-      text: 'Klopfe langsam. Du kannst auch nur einmal pro Sekunde klopfen.'
+      minInterval: 1000,
+      text: 'Klopfe langsam – mindestens eine Sekunde zwischen den Klopfern.'
     },
     {
       key: 'rhythm',
@@ -229,8 +230,15 @@
   var phaseIndex = 0;
   var countInPhase = 0;
   var breathTapCount = 0;
+  var lastCountedWarmupTap = 0;
   var currentPulseAnim = null;
   var currentRippleAnim = null;
+
+  // Vibration API only controls duration/pattern, not amplitude — this is the
+  // strongest, longest pattern that still feels responsive on a tap.
+  var VIBE_TAP = [55];
+  var VIBE_PHASE_CHANGE = [80, 50, 80, 50, 80];
+  var VIBE_TOO_FAST = [12];
 
   function vibrate(pattern){
     if (navigator.vibrate){
@@ -264,7 +272,7 @@
     if (phase.total !== null && countInPhase >= phase.total && phaseIndex < PHASES.length - 1){
       phaseIndex += 1;
       countInPhase = 0;
-      vibrate([25, 50, 25]); // distinct pulse marks a phase change
+      vibrate(VIBE_PHASE_CHANGE); // distinct pulse marks a phase change
     }
   }
 
@@ -291,14 +299,25 @@
 
   function handleTap(e){
     e.preventDefault();
-    vibrate(16);
-    knockPulse();
-
     var phase = PHASES[phaseIndex];
+    var now = Date.now();
+
+    // In der Ankommen-Phase zählt ein Klopfer nur, wenn seit dem letzten
+    // gezählten Klopfer mindestens minInterval vergangen ist — schnellere
+    // Klopfer geben trotzdem Feedback (Kreis + Vibration), zählen aber nicht.
+    var tooFast = phase.minInterval && lastCountedWarmupTap !== 0 &&
+                  (now - lastCountedWarmupTap) < phase.minInterval;
+
+    knockPulse();
+    vibrate(tooFast ? VIBE_TOO_FAST : VIBE_TAP);
+
+    if (tooFast) return;
+
     if (phase.key === 'breathing'){
       breathTapCount += 1;
     } else {
       countInPhase += 1;
+      if (phase.minInterval) lastCountedWarmupTap = now;
     }
     advancePhaseIfNeeded();
     render();
@@ -320,6 +339,7 @@
     phaseIndex = 0;
     countInPhase = 0;
     breathTapCount = 0;
+    lastCountedWarmupTap = 0;
     render();
   });
 
