@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="description" content="Klopfen — ein digitales Klopfobjekt für achtsames, bilaterales Klopfen.">
+<meta name="description" content="Klopfen — ein digitales Klopfobjekt mit frei einstellbarem Rhythmus.">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -20,6 +20,11 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     user-select: none;
+  }
+  input, textarea{
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    user-select: text;
   }
   html, body{ height: 100%; margin: 0; overscroll-behavior: none; }
   body{
@@ -113,22 +118,12 @@
     line-height: 1.55;
     color: #b0b0b0;
     font-weight: 400;
-    min-height: 2.4em;
+    min-height: 1.6em;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: opacity 0.25s ease;
   }
-
-  .legend{
-    font-size: 12px;
-    line-height: 1.5;
-    color: #666;
-    opacity: 0;
-    max-height: 0;
-    transition: opacity 0.5s ease, max-height 0.5s ease;
-  }
-  .legend.show{ opacity: 1; max-height: 4em; }
 
   .counter{
     font-size: 13px;
@@ -137,33 +132,168 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .end-btn{
+  .bottom-btn{
     position: absolute;
     bottom: max(18px, env(safe-area-inset-bottom, 18px));
     left: 50%;
     transform: translateX(-50%);
     font-size: 12px;
     letter-spacing: 0.1em;
-    color: #555;
     background: none;
     border: none;
     padding: 12px 20px;
-    opacity: 0.28;
     transition: opacity 0.3s ease;
     font-family: inherit;
     z-index: 2;
+    white-space: nowrap;
   }
-  .end-btn:active{ opacity: 0.7; color: #999; }
+  .bottom-btn:active{ opacity: 0.95 !important; }
+  #endBtn{ color: #555; opacity: 0.28; }
+  #endBtn:active{ color: #999; }
+  #menuBtn{ color: #888; opacity: 0.6; }
+  #menuBtn:active{ color: #ccc; }
 
   .version{
     position: absolute;
-    bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    top: max(10px, env(safe-area-inset-top, 10px));
     right: 14px;
     font-size: 10px;
     letter-spacing: 0.05em;
     color: #3d3d3d;
     z-index: 2;
   }
+
+  /* ---- Menü & Editor ---- */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(5,5,5,0.92);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 10;
+  }
+  .overlay.show{ opacity: 1; pointer-events: auto; }
+
+  .panel{
+    width: 100%;
+    max-width: 420px;
+    max-height: 86vh;
+    overflow-y: auto;
+    background: #0d0d0d;
+    border-radius: 20px 20px 0 0;
+    padding: 18px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(16px);
+    transition: transform 0.25s ease;
+  }
+  .overlay.show .panel{ transform: translateY(0); }
+
+  .panel-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #ccc;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #1c1c1c;
+  }
+  .panel-header button{
+    background: none; border: none; color: #666; font-size: 20px;
+    padding: 6px; line-height: 1;
+  }
+  .panel-header button:active{ color: #ccc; }
+
+  .program-list{ display: flex; flex-direction: column; }
+  .program-item{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 2px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .program-item .info{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .program-item .name{ font-size: 15px; color: #ddd; }
+  .program-item.active .name{ color: #e2555c; }
+  .program-item .name::before{ content: ''; }
+  .program-item.active .name::after{ content: ' ✓'; font-size: 12px; }
+  .program-item .summary{ font-size: 11px; color: #666; }
+  .program-item .actions{ display: flex; gap: 4px; flex-shrink: 0; }
+  .icon-btn{
+    background: none; border: none; color: #666; font-size: 15px;
+    padding: 8px; min-width: 40px;
+  }
+  .icon-btn:active{ color: #ccc; }
+  .icon-btn.warn{ color: #a05050; font-size: 11px; letter-spacing: 0.02em; }
+
+  .primary-btn{
+    width: 100%;
+    margin-top: 18px;
+    background: #c1272d;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    font-family: inherit;
+  }
+  .primary-btn:active{ background: #a31f24; }
+
+  .field-label{
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #777;
+    margin: 16px 0 6px;
+  }
+  input[type="text"]{
+    width: 100%;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 10px;
+    color: #eee;
+    font-size: 15px;
+    padding: 11px 12px;
+    font-family: inherit;
+  }
+  input[type="text"]::placeholder{ color: #4a4a4a; }
+
+  .stepper-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+  .stepper-row label{ font-size: 13px; color: #aaa; }
+  .stepper{ display: flex; align-items: center; gap: 10px; }
+  .stepper button{
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #2a2a2a; background: #161616;
+    color: #e2555c; font-size: 18px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .stepper button:active{ background: #241010; }
+  .stepper span{
+    min-width: 56px; text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: #ddd; font-size: 14px;
+  }
+
+  .editor-actions{ display: flex; gap: 10px; margin-top: 24px; }
+  .editor-actions .danger-btn{
+    flex: 1; background: none; border: 1px solid #3a2222;
+    color: #a05050; border-radius: 12px; font-size: 13px;
+    font-family: inherit;
+  }
+  .editor-actions .primary-btn{ margin-top: 0; flex: 2; }
 </style>
 </head>
 <body>
@@ -179,20 +309,86 @@
 
   <div class="text-block">
     <div class="phase-label" id="phaseLabel">Bereit</div>
-    <div class="instruction" id="instruction" aria-live="polite">Tippe auf den Punkt, um zu beginnen.</div>
-    <div class="legend" id="legend">Einatmen: 1× klopfen · Ausatmen: 4× klopfen (langsam)</div>
+    <div class="instruction" id="instruction" aria-live="polite">Tippe zum Start</div>
     <div class="counter" id="counter"></div>
   </div>
 
-  <button class="end-btn" id="endBtn">beenden</button>
+  <button class="bottom-btn" id="endBtn" style="display:none;">beenden</button>
+  <button class="bottom-btn" id="menuBtn">Programm</button>
   <div class="version" id="version"></div>
+</div>
+
+<!-- Programm-Menü -->
+<div class="overlay" id="menuOverlay">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Programme</span>
+      <button id="menuCloseBtn">✕</button>
+    </div>
+    <div class="program-list" id="programList"></div>
+    <button class="primary-btn" id="newProgramBtn">+ Neues Programm</button>
+  </div>
+</div>
+
+<!-- Programm-Editor -->
+<div class="overlay" id="editorOverlay">
+  <div class="panel">
+    <div class="panel-header">
+      <span id="editorTitle">Neues Programm</span>
+      <button id="editorCloseBtn">✕</button>
+    </div>
+
+    <div class="field-label">Name</div>
+    <input type="text" id="nameInput" maxlength="24" placeholder="z. B. Vor dem Schlafen">
+
+    <div class="stepper-row">
+      <label>Dauerrasseln</label>
+      <div class="stepper">
+        <button data-field="rattleSec" data-delta="-0.5">–</button>
+        <span id="rattleSecValue">2 s</span>
+        <button data-field="rattleSec" data-delta="0.5">+</button>
+      </div>
+    </div>
+
+    <div class="stepper-row">
+      <label>Anzahl Einzelimpulse</label>
+      <div class="stepper">
+        <button data-field="pulseCount" data-delta="-1">–</button>
+        <span id="pulseCountValue">6</span>
+        <button data-field="pulseCount" data-delta="1">+</button>
+      </div>
+    </div>
+
+    <div class="stepper-row">
+      <label>Dauer Impulsphase</label>
+      <div class="stepper">
+        <button data-field="pulsePhaseSec" data-delta="-1">–</button>
+        <span id="pulsePhaseSecValue">6 s</span>
+        <button data-field="pulsePhaseSec" data-delta="1">+</button>
+      </div>
+    </div>
+
+    <div class="stepper-row">
+      <label>Gesamtdauer</label>
+      <div class="stepper">
+        <button data-field="totalMin" data-delta="-0.5">–</button>
+        <span id="totalMinValue">2 min</span>
+        <button data-field="totalMin" data-delta="0.5">+</button>
+      </div>
+    </div>
+
+    <div class="editor-actions">
+      <button class="danger-btn" id="deleteProgramBtn" style="display:none;">Löschen</button>
+      <button class="primary-btn" id="saveProgramBtn">Speichern</button>
+    </div>
+  </div>
 </div>
 
 <script>
 (function(){
   "use strict";
 
-  var APP_VERSION = "2.2.0";
+  var APP_VERSION = "3.0.0";
   document.getElementById('version').textContent = 'v' + APP_VERSION;
 
   var circle = document.getElementById('circle');
@@ -201,61 +397,37 @@
   var tapZone = document.getElementById('tapZone');
   var phaseLabelEl = document.getElementById('phaseLabel');
   var instructionEl = document.getElementById('instruction');
-  var legendEl = document.getElementById('legend');
   var counterEl = document.getElementById('counter');
   var endBtn = document.getElementById('endBtn');
+  var menuBtn = document.getElementById('menuBtn');
 
-  var PHASES = [
-    {
-      key: 'warmup',
-      label: 'Ankommen',
-      total: 20,
-      minInterval: 1000,
-      text: 'Klopfe langsam – mindestens eine Sekunde zwischen den Klopfern.'
-    },
-    {
-      key: 'rhythm',
-      label: 'Rhythmus',
-      total: 50,
-      text: 'Finde deinen eigenen Rhythmus. Klopfe in jedem Tempo – keine Zeitbegrenzung.'
-    },
-    {
-      key: 'breathing',
-      label: 'Atmen',
-      total: null,
-      text: null // dynamic
-    }
-  ];
+  var menuOverlay = document.getElementById('menuOverlay');
+  var menuCloseBtn = document.getElementById('menuCloseBtn');
+  var programListEl = document.getElementById('programList');
+  var newProgramBtn = document.getElementById('newProgramBtn');
 
-  // ---- Automatische Einstiegs-Atemsequenz -------------------------------
-  // Ein Tap auf den Punkt startet die Sequenz von selbst. Zyklus (8s):
-  //   2s deutliches Dauerrasseln  = Einatmen
-  //   6s Einzelimpulse im Sekundentakt (6x) = Ausatmen
-  // Wiederholt für insgesamt 2 Minuten (15 Zyklen à 8s), danach beginnt
-  // der bisherige, manuell getappte Ablauf (PHASES oben).
-  var AUTO_INHALE_MS = 2000;
-  var AUTO_EXHALE_MS = 6000;
-  var AUTO_EXHALE_PULSES = 6;
-  var AUTO_TOTAL_MS = 120000;
+  var editorOverlay = document.getElementById('editorOverlay');
+  var editorCloseBtn = document.getElementById('editorCloseBtn');
+  var editorTitleEl = document.getElementById('editorTitle');
+  var nameInput = document.getElementById('nameInput');
+  var saveProgramBtn = document.getElementById('saveProgramBtn');
+  var deleteProgramBtn = document.getElementById('deleteProgramBtn');
 
-  // appState: 'idle' (wartet auf ersten Tap) -> 'auto' (automatische Sequenz)
-  //           -> 'manual' (bisheriger, tap-gesteuerter Ablauf)
-  var appState = 'idle';
-  var autoRunId = 0;
-  var autoTimeoutIds = [];
+  var rattleSecValueEl = document.getElementById('rattleSecValue');
+  var pulseCountValueEl = document.getElementById('pulseCountValue');
+  var pulsePhaseSecValueEl = document.getElementById('pulsePhaseSecValue');
+  var totalMinValueEl = document.getElementById('totalMinValue');
 
-  var phaseIndex = 0;
-  var countInPhase = 0;
-  var breathTapCount = 0;
-  var lastCountedWarmupTap = 0;
-  var currentPulseAnim = null;
-  var currentRippleAnim = null;
+  // ---- Vibration / Animation Helfer ---------------------------------
 
-  // Vibration API only controls duration/pattern, not amplitude — this is the
-  // strongest, longest pattern that still feels responsive on a tap.
   var VIBE_TAP = [55];
-  var VIBE_PHASE_CHANGE = [80, 50, 80, 50, 80];
-  var VIBE_TOO_FAST = [12];
+  var VIBE_END = [80, 50, 80, 50, 80];
+
+  function vibrate(pattern){
+    if (navigator.vibrate){
+      try { navigator.vibrate(pattern); } catch(e) {}
+    }
+  }
 
   function buildRattlePattern(totalMs, onMs, offMs){
     var pattern = [];
@@ -270,55 +442,10 @@
     }
     return pattern;
   }
-  var VIBE_RATTLE = buildRattlePattern(AUTO_INHALE_MS, 45, 45); // deutliches Dauerrasseln
 
-  function vibrate(pattern){
-    if (navigator.vibrate){
-      try { navigator.vibrate(pattern); } catch(e) {}
-    }
-  }
-
-  function clearAutoTimers(){
-    autoTimeoutIds.forEach(function(id){ clearTimeout(id); });
-    autoTimeoutIds = [];
-  }
-
-  function render(){
-    var phase = PHASES[phaseIndex];
-    phaseLabelEl.textContent = phase.label;
-
-    if (phase.key === 'breathing'){
-      legendEl.classList.add('show');
-      var step = breathTapCount % 5; // 0 = about to inhale, 1..4 = exhale taps
-      if (step === 0){
-        instructionEl.textContent = 'Einatmen — klopfen';
-        counterEl.textContent = '';
-      } else {
-        instructionEl.textContent = 'Ausatmen — klopfen';
-        counterEl.textContent = step + ' / 4';
-      }
-    } else {
-      legendEl.classList.remove('show');
-      instructionEl.textContent = phase.text;
-      counterEl.textContent = countInPhase + ' / ' + phase.total;
-    }
-  }
-
-  function renderIdle(){
-    phaseLabelEl.textContent = 'Bereit';
-    legendEl.classList.remove('show');
-    instructionEl.textContent = 'Tippe auf den Punkt, um zu beginnen.';
-    counterEl.textContent = '';
-  }
-
-  function advancePhaseIfNeeded(){
-    var phase = PHASES[phaseIndex];
-    if (phase.total !== null && countInPhase >= phase.total && phaseIndex < PHASES.length - 1){
-      phaseIndex += 1;
-      countInPhase = 0;
-      vibrate(VIBE_PHASE_CHANGE); // distinct pulse marks a phase change
-    }
-  }
+  var currentPulseAnim = null;
+  var currentGlowAnim = null;
+  var currentRippleAnim = null;
 
   function knockPulse(){
     if (currentPulseAnim) currentPulseAnim.cancel();
@@ -328,7 +455,8 @@
       { transform: 'scale(1)' }
     ], { duration: 620, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' });
 
-    glow.animate([
+    if (currentGlowAnim) currentGlowAnim.cancel();
+    currentGlowAnim = glow.animate([
       { opacity: 0.55 },
       { opacity: 1, offset: 0.16 },
       { opacity: 0.5 }
@@ -341,150 +469,391 @@
     ], { duration: 700, easing: 'ease-out' });
   }
 
-  function flutterPulse(){
+  function flutterPulse(durationMs){
     // Visuelles Gegenstück zum Dauerrasseln: der Kreis "zittert" durchgehend
-    // über die vollen 2 Sekunden.
+    // über die gesamte Rasseldauer.
     if (currentPulseAnim) currentPulseAnim.cancel();
-    var steps = 16;
+    var steps = Math.max(4, Math.round(durationMs / 125));
     var kf = [];
     for (var i = 0; i <= steps; i++){
       kf.push({ transform: 'scale(' + (i % 2 === 0 ? 1.07 : 1) + ')', offset: i / steps });
     }
-    currentPulseAnim = circle.animate(kf, { duration: AUTO_INHALE_MS, easing: 'ease-in-out' });
+    currentPulseAnim = circle.animate(kf, { duration: durationMs, easing: 'ease-in-out' });
 
-    glow.animate([
-      { opacity: 0.5 },
-      { opacity: 0.95 },
-      { opacity: 0.5 }
-    ], { duration: 500, iterations: AUTO_INHALE_MS / 500, easing: 'ease-in-out' });
+    if (currentGlowAnim) currentGlowAnim.cancel();
+    var gkf = [];
+    for (var j = 0; j <= steps; j++){
+      gkf.push({ opacity: (j % 2 === 0 ? 0.95 : 0.5), offset: j / steps });
+    }
+    currentGlowAnim = glow.animate(gkf, { duration: durationMs, easing: 'ease-in-out' });
   }
 
-  // ---- Auto-Sequenz -------------------------------------------------------
+  // ---- Programme (Presets) -------------------------------------------
 
-  function runInhale(runId){
-    if (runId !== autoRunId) return;
-    phaseLabelEl.textContent = 'Automatik';
-    legendEl.classList.remove('show');
+  var STORAGE_PROGRAMS = 'klopfen.programs.v1';
+  var STORAGE_ACTIVE = 'klopfen.activeId.v1';
+
+  function makeId(){
+    return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  function makeDefaultProgram(){
+    return { id: 'default', name: 'Standard', rattleSec: 2, pulseCount: 6, pulsePhaseSec: 6, totalMin: 2 };
+  }
+
+  function loadPrograms(){
+    try {
+      var raw = localStorage.getItem(STORAGE_PROGRAMS);
+      if (raw){
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    } catch(e){}
+    return null;
+  }
+  function savePrograms(){
+    try { localStorage.setItem(STORAGE_PROGRAMS, JSON.stringify(programs)); } catch(e){}
+  }
+  function loadActiveId(){
+    try { return localStorage.getItem(STORAGE_ACTIVE); } catch(e){ return null; }
+  }
+  function saveActiveId(){
+    try { localStorage.setItem(STORAGE_ACTIVE, activeId); } catch(e){}
+  }
+
+  var storedPrograms = loadPrograms();
+  var programs = storedPrograms || [makeDefaultProgram()];
+  if (!storedPrograms) savePrograms();
+
+  var activeId = loadActiveId();
+  if (!activeId || !programs.some(function(p){ return p.id === activeId; })){
+    activeId = programs[0].id;
+    saveActiveId();
+  }
+
+  function getActiveProgram(){
+    var found = programs.filter(function(p){ return p.id === activeId; })[0];
+    return found || programs[0];
+  }
+
+  function fmtNum(n){
+    return String(Math.round(n * 10) / 10);
+  }
+
+  function summarizeProgram(p){
+    return fmtNum(p.rattleSec) + 's Rasseln · ' + p.pulseCount + '× Impuls / ' + fmtNum(p.pulsePhaseSec) + 's · ' + fmtNum(p.totalMin) + ' Min';
+  }
+
+  function setActiveProgram(id){
+    activeId = id;
+    saveActiveId();
+    renderProgramList();
+    if (appState === 'idle') renderIdle();
+  }
+
+  function deleteProgram(id){
+    programs = programs.filter(function(p){ return p.id !== id; });
+    if (!programs.length){
+      programs = [makeDefaultProgram()];
+    }
+    savePrograms();
+    if (activeId === id){
+      activeId = programs[0].id;
+      saveActiveId();
+    }
+    renderProgramList();
+    if (appState === 'idle') renderIdle();
+  }
+
+  // ---- Menü / Editor UI -------------------------------------------------
+
+  function showOverlay(el){ el.classList.add('show'); }
+  function hideOverlay(el){ el.classList.remove('show'); }
+
+  function openMenu(){
+    renderProgramList();
+    showOverlay(menuOverlay);
+  }
+  function closeMenu(){ hideOverlay(menuOverlay); }
+
+  function renderProgramList(){
+    programListEl.innerHTML = '';
+    programs.forEach(function(p){
+      var item = document.createElement('div');
+      item.className = 'program-item' + (p.id === activeId ? ' active' : '');
+
+      var info = document.createElement('div');
+      info.className = 'info';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = p.name;
+      var sumEl = document.createElement('div');
+      sumEl.className = 'summary';
+      sumEl.textContent = summarizeProgram(p);
+      info.appendChild(nameEl);
+      info.appendChild(sumEl);
+
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+
+      var editBtn = document.createElement('button');
+      editBtn.className = 'icon-btn';
+      editBtn.textContent = '✎';
+      editBtn.addEventListener('pointerdown', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        openEditor(p.id);
+      });
+
+      var delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn';
+      delBtn.textContent = '🗑';
+      var confirming = false;
+      var confirmTimeout = null;
+      delBtn.addEventListener('pointerdown', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirming){
+          confirming = true;
+          delBtn.textContent = 'sicher?';
+          delBtn.classList.add('warn');
+          confirmTimeout = setTimeout(function(){
+            confirming = false;
+            delBtn.textContent = '🗑';
+            delBtn.classList.remove('warn');
+          }, 2500);
+        } else {
+          clearTimeout(confirmTimeout);
+          deleteProgram(p.id);
+        }
+      });
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      item.appendChild(info);
+      item.appendChild(actions);
+
+      item.addEventListener('pointerdown', function(e){
+        if (e.target === editBtn || e.target === delBtn) return;
+        setActiveProgram(p.id);
+        closeMenu();
+      });
+
+      programListEl.appendChild(item);
+    });
+  }
+
+  var FIELD_BOUNDS = {
+    rattleSec: { min: 0.5, max: 15 },
+    pulseCount: { min: 1, max: 20 },
+    pulsePhaseSec: { min: 1, max: 30 },
+    totalMin: { min: 0.5, max: 30 }
+  };
+
+  var editingId = null;
+  var editValues = null;
+
+  function openEditor(id){
+    editingId = id || null;
+    var base = editingId ? programs.filter(function(p){ return p.id === editingId; })[0] : null;
+    var src = base || getActiveProgram() || makeDefaultProgram();
+    editValues = {
+      rattleSec: src.rattleSec,
+      pulseCount: src.pulseCount,
+      pulsePhaseSec: src.pulsePhaseSec,
+      totalMin: src.totalMin
+    };
+    nameInput.value = base ? base.name : '';
+    editorTitleEl.textContent = base ? 'Programm bearbeiten' : 'Neues Programm';
+    deleteProgramBtn.style.display = base ? '' : 'none';
+    updateEditorFields();
+    showOverlay(editorOverlay);
+  }
+  function closeEditor(){ hideOverlay(editorOverlay); }
+
+  function updateEditorFields(){
+    rattleSecValueEl.textContent = fmtNum(editValues.rattleSec) + ' s';
+    pulseCountValueEl.textContent = String(editValues.pulseCount);
+    pulsePhaseSecValueEl.textContent = fmtNum(editValues.pulsePhaseSec) + ' s';
+    totalMinValueEl.textContent = fmtNum(editValues.totalMin) + ' min';
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.stepper button'), function(btn){
+    btn.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      var field = btn.getAttribute('data-field');
+      var delta = parseFloat(btn.getAttribute('data-delta'));
+      var bounds = FIELD_BOUNDS[field];
+      var next = Math.round((editValues[field] + delta) * 10) / 10;
+      next = Math.max(bounds.min, Math.min(bounds.max, next));
+      editValues[field] = next;
+      updateEditorFields();
+    });
+  });
+
+  menuBtn.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    if (appState !== 'idle') return;
+    openMenu();
+  });
+  menuCloseBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); closeMenu(); });
+  newProgramBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); openEditor(null); });
+  editorCloseBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); closeEditor(); });
+
+  saveProgramBtn.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    var name = nameInput.value.trim() || 'Programm';
+    if (editingId){
+      var existing = programs.filter(function(p){ return p.id === editingId; })[0];
+      if (existing){
+        existing.name = name;
+        existing.rattleSec = editValues.rattleSec;
+        existing.pulseCount = editValues.pulseCount;
+        existing.pulsePhaseSec = editValues.pulsePhaseSec;
+        existing.totalMin = editValues.totalMin;
+      }
+    } else {
+      var newProgram = {
+        id: makeId(),
+        name: name,
+        rattleSec: editValues.rattleSec,
+        pulseCount: editValues.pulseCount,
+        pulsePhaseSec: editValues.pulsePhaseSec,
+        totalMin: editValues.totalMin
+      };
+      programs.push(newProgram);
+      editingId = newProgram.id;
+    }
+    savePrograms();
+    activeId = editingId;
+    saveActiveId();
+    closeEditor();
+    renderProgramList();
+    if (appState === 'idle') renderIdle();
+  });
+
+  deleteProgramBtn.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    if (editingId) deleteProgram(editingId);
+    closeEditor();
+  });
+
+  // ---- Ablauf: Bereit / Läuft -------------------------------------------
+
+  // appState: 'idle' (wartet auf Tap) -> 'running' (Programm läuft automatisch ab)
+  var appState = 'idle';
+  var activeRunId = 0;
+  var runTimeoutIds = [];
+
+  function clearRunTimers(){
+    runTimeoutIds.forEach(function(id){ clearTimeout(id); });
+    runTimeoutIds = [];
+  }
+
+  function msFromSec(s){ return Math.round(s * 1000); }
+
+  function renderIdle(){
+    appState = 'idle';
+    var p = getActiveProgram();
+    phaseLabelEl.textContent = 'Bereit';
+    instructionEl.textContent = 'Tippe zum Start';
+    counterEl.textContent = summarizeProgram(p);
+    menuBtn.textContent = 'Programm: ' + p.name;
+    menuBtn.style.display = '';
+    endBtn.style.display = 'none';
+  }
+
+  function runInhale(runId, rattleMs){
+    if (runId !== activeRunId) return;
     instructionEl.textContent = 'Einatmen';
     counterEl.textContent = '';
-    flutterPulse();
-    vibrate(VIBE_RATTLE);
+    flutterPulse(rattleMs);
+    vibrate(buildRattlePattern(rattleMs, 45, 45));
   }
 
-  function runExhalePulse(runId, n){
-    if (runId !== autoRunId) return;
+  function runExhalePulse(runId, n, count){
+    if (runId !== activeRunId) return;
     instructionEl.textContent = 'Ausatmen';
-    counterEl.textContent = n + ' / ' + AUTO_EXHALE_PULSES;
+    counterEl.textContent = n + ' / ' + count;
     knockPulse();
     vibrate(VIBE_TAP);
   }
 
-  function runAutoCycle(runId, elapsedMs){
-    if (runId !== autoRunId) return;
+  function runCycle(runId, program, elapsedMs){
+    if (runId !== activeRunId) return;
 
-    if (elapsedMs >= AUTO_TOTAL_MS){
-      startManual(runId);
+    var rattleMs = msFromSec(program.rattleSec);
+    var phaseMs = msFromSec(program.pulsePhaseSec);
+    var totalMs = Math.round(program.totalMin * 60000);
+    var cycleMs = rattleMs + phaseMs;
+
+    if (elapsedMs >= totalMs){
+      finishRun(runId);
       return;
     }
 
-    runInhale(runId);
+    runInhale(runId, rattleMs);
 
     var toExhale = setTimeout(function(){
-      if (runId !== autoRunId) return;
+      if (runId !== activeRunId) return;
 
-      for (var i = 1; i <= AUTO_EXHALE_PULSES; i++){
+      var count = program.pulseCount;
+      var interval = count > 0 ? phaseMs / count : phaseMs;
+      for (var i = 1; i <= count; i++){
         (function(n){
           var pulseId = setTimeout(function(){
-            runExhalePulse(runId, n);
-          }, n * 1000);
-          autoTimeoutIds.push(pulseId);
+            runExhalePulse(runId, n, count);
+          }, Math.round(n * interval));
+          runTimeoutIds.push(pulseId);
         })(i);
       }
 
-      var toNextCycle = setTimeout(function(){
-        runAutoCycle(runId, elapsedMs + AUTO_INHALE_MS + AUTO_EXHALE_MS);
-      }, AUTO_EXHALE_MS);
-      autoTimeoutIds.push(toNextCycle);
+      var toNext = setTimeout(function(){
+        runCycle(runId, program, elapsedMs + cycleMs);
+      }, phaseMs);
+      runTimeoutIds.push(toNext);
 
-    }, AUTO_INHALE_MS);
-    autoTimeoutIds.push(toExhale);
+    }, rattleMs);
+    runTimeoutIds.push(toExhale);
   }
 
-  function startAuto(){
-    appState = 'auto';
-    autoRunId += 1;
-    runAutoCycle(autoRunId, 0);
+  function startRun(){
+    var program = getActiveProgram();
+    appState = 'running';
+    activeRunId += 1;
+    phaseLabelEl.textContent = program.name;
+    menuBtn.style.display = 'none';
+    endBtn.style.display = '';
+    runCycle(activeRunId, program, 0);
   }
 
-  function startManual(runId){
-    if (runId !== autoRunId) return;
-    appState = 'manual';
-    phaseIndex = 0;
-    countInPhase = 0;
-    breathTapCount = 0;
-    lastCountedWarmupTap = 0;
-    vibrate(VIBE_PHASE_CHANGE);
-    render();
+  function finishRun(runId){
+    if (runId !== activeRunId) return;
+    vibrate(VIBE_END);
+    renderIdle();
   }
 
-  function resetToIdle(){
-    clearAutoTimers();
-    autoRunId += 1; // invalidiert alle noch laufenden Auto-Timeouts
-    appState = 'idle';
-    phaseIndex = 0;
-    countInPhase = 0;
-    breathTapCount = 0;
-    lastCountedWarmupTap = 0;
+  function stopRun(){
+    clearRunTimers();
+    activeRunId += 1; // invalidiert alle noch ausstehenden Timeouts
     renderIdle();
   }
 
   function handleTap(e){
     e.preventDefault();
-
-    if (appState === 'idle'){
-      // Kein separates Tap-Feedback hier: runInhale() (in startAuto) liefert
-      // sofort Vibration + Animation. Ein zusätzlicher vibrate()-Aufruf direkt
-      // davor lässt manche Handys (v.a. Android) den zweiten, unmittelbar
-      // folgenden Aufruf verwerfen — das erste Dauerrasseln würde stumm bleiben.
-      startAuto();
-      return;
-    }
-
-    if (appState === 'auto'){
-      // Sequenz läuft von selbst — Taps werden während dieser Phase ignoriert.
-      return;
-    }
-
-    // appState === 'manual': bisheriger, tap-gesteuerter Ablauf.
-    var phase = PHASES[phaseIndex];
-    var now = Date.now();
-
-    // In der Ankommen-Phase zählt ein Klopfer nur, wenn seit dem letzten
-    // gezählten Klopfer mindestens minInterval vergangen ist — schnellere
-    // Klopfer geben trotzdem Feedback (Kreis + Vibration), zählen aber nicht.
-    var tooFast = phase.minInterval && lastCountedWarmupTap !== 0 &&
-                  (now - lastCountedWarmupTap) < phase.minInterval;
-
-    knockPulse();
-    vibrate(tooFast ? VIBE_TOO_FAST : VIBE_TAP);
-
-    if (tooFast) return;
-
-    if (phase.key === 'breathing'){
-      breathTapCount += 1;
-    } else {
-      countInPhase += 1;
-      if (phase.minInterval) lastCountedWarmupTap = now;
-    }
-    advancePhaseIfNeeded();
-    render();
+    if (appState !== 'idle') return;
+    // Kein separates Tap-Feedback hier: runInhale() liefert sofort Vibration
+    // + Animation. Ein zusätzlicher vibrate()-Aufruf direkt davor lässt
+    // manche Handys den unmittelbar folgenden Aufruf verwerfen.
+    startRun();
   }
 
   tapZone.addEventListener('pointerdown', handleTap, { passive: false });
 
   document.addEventListener('keydown', function(e){
     if (e.code === 'Space' || e.code === 'Enter'){
-      if (document.activeElement === endBtn) return;
+      if (document.activeElement === endBtn || document.activeElement === nameInput) return;
+      if (menuOverlay.classList.contains('show') || editorOverlay.classList.contains('show')) return;
       e.preventDefault();
       handleTap(e);
     }
@@ -493,7 +862,7 @@
   endBtn.addEventListener('pointerdown', function(e){
     e.preventDefault();
     e.stopPropagation();
-    resetToIdle();
+    stopRun();
   });
 
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
