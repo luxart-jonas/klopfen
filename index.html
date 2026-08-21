@@ -178,10 +178,10 @@
   </div>
 
   <div class="text-block">
-    <div class="phase-label" id="phaseLabel">Ankommen</div>
-    <div class="instruction" id="instruction" aria-live="polite">Klopfe langsam. Du kannst auch nur einmal pro Sekunde klopfen.</div>
+    <div class="phase-label" id="phaseLabel">Bereit</div>
+    <div class="instruction" id="instruction" aria-live="polite">Tippe auf den Punkt, um zu beginnen.</div>
     <div class="legend" id="legend">Einatmen: 1× klopfen · Ausatmen: 4× klopfen (langsam)</div>
-    <div class="counter" id="counter">0 / 20</div>
+    <div class="counter" id="counter"></div>
   </div>
 
   <button class="end-btn" id="endBtn">beenden</button>
@@ -192,7 +192,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "2.1.0";
+  var APP_VERSION = "2.2.0";
   document.getElementById('version').textContent = 'v' + APP_VERSION;
 
   var circle = document.getElementById('circle');
@@ -227,6 +227,23 @@
     }
   ];
 
+  // ---- Automatische Einstiegs-Atemsequenz -------------------------------
+  // Ein Tap auf den Punkt startet die Sequenz von selbst. Zyklus (8s):
+  //   2s deutliches Dauerrasseln  = Einatmen
+  //   6s Einzelimpulse im Sekundentakt (6x) = Ausatmen
+  // Wiederholt für insgesamt 2 Minuten (15 Zyklen à 8s), danach beginnt
+  // der bisherige, manuell getappte Ablauf (PHASES oben).
+  var AUTO_INHALE_MS = 2000;
+  var AUTO_EXHALE_MS = 6000;
+  var AUTO_EXHALE_PULSES = 6;
+  var AUTO_TOTAL_MS = 120000;
+
+  // appState: 'idle' (wartet auf ersten Tap) -> 'auto' (automatische Sequenz)
+  //           -> 'manual' (bisheriger, tap-gesteuerter Ablauf)
+  var appState = 'idle';
+  var autoRunId = 0;
+  var autoTimeoutIds = [];
+
   var phaseIndex = 0;
   var countInPhase = 0;
   var breathTapCount = 0;
@@ -240,10 +257,30 @@
   var VIBE_PHASE_CHANGE = [80, 50, 80, 50, 80];
   var VIBE_TOO_FAST = [12];
 
+  function buildRattlePattern(totalMs, onMs, offMs){
+    var pattern = [];
+    var t = 0;
+    while (t < totalMs){
+      pattern.push(onMs);
+      t += onMs;
+      if (t < totalMs){
+        pattern.push(offMs);
+        t += offMs;
+      }
+    }
+    return pattern;
+  }
+  var VIBE_RATTLE = buildRattlePattern(AUTO_INHALE_MS, 45, 45); // deutliches Dauerrasseln
+
   function vibrate(pattern){
     if (navigator.vibrate){
       try { navigator.vibrate(pattern); } catch(e) {}
     }
+  }
+
+  function clearAutoTimers(){
+    autoTimeoutIds.forEach(function(id){ clearTimeout(id); });
+    autoTimeoutIds = [];
   }
 
   function render(){
@@ -265,6 +302,13 @@
       instructionEl.textContent = phase.text;
       counterEl.textContent = countInPhase + ' / ' + phase.total;
     }
+  }
+
+  function renderIdle(){
+    phaseLabelEl.textContent = 'Bereit';
+    legendEl.classList.remove('show');
+    instructionEl.textContent = 'Tippe auf den Punkt, um zu beginnen.';
+    counterEl.textContent = '';
   }
 
   function advancePhaseIfNeeded(){
@@ -297,8 +341,119 @@
     ], { duration: 700, easing: 'ease-out' });
   }
 
+  function flutterPulse(){
+    // Visuelles Gegenstück zum Dauerrasseln: der Kreis "zittert" durchgehend
+    // über die vollen 2 Sekunden.
+    if (currentPulseAnim) currentPulseAnim.cancel();
+    var steps = 16;
+    var kf = [];
+    for (var i = 0; i <= steps; i++){
+      kf.push({ transform: 'scale(' + (i % 2 === 0 ? 1.07 : 1) + ')', offset: i / steps });
+    }
+    currentPulseAnim = circle.animate(kf, { duration: AUTO_INHALE_MS, easing: 'ease-in-out' });
+
+    glow.animate([
+      { opacity: 0.5 },
+      { opacity: 0.95 },
+      { opacity: 0.5 }
+    ], { duration: 500, iterations: AUTO_INHALE_MS / 500, easing: 'ease-in-out' });
+  }
+
+  // ---- Auto-Sequenz -------------------------------------------------------
+
+  function runInhale(runId){
+    if (runId !== autoRunId) return;
+    phaseLabelEl.textContent = 'Automatik';
+    legendEl.classList.remove('show');
+    instructionEl.textContent = 'Einatmen';
+    counterEl.textContent = '';
+    flutterPulse();
+    vibrate(VIBE_RATTLE);
+  }
+
+  function runExhalePulse(runId, n){
+    if (runId !== autoRunId) return;
+    instructionEl.textContent = 'Ausatmen';
+    counterEl.textContent = n + ' / ' + AUTO_EXHALE_PULSES;
+    knockPulse();
+    vibrate(VIBE_TAP);
+  }
+
+  function runAutoCycle(runId, elapsedMs){
+    if (runId !== autoRunId) return;
+
+    if (elapsedMs >= AUTO_TOTAL_MS){
+      startManual(runId);
+      return;
+    }
+
+    runInhale(runId);
+
+    var toExhale = setTimeout(function(){
+      if (runId !== autoRunId) return;
+
+      for (var i = 1; i <= AUTO_EXHALE_PULSES; i++){
+        (function(n){
+          var pulseId = setTimeout(function(){
+            runExhalePulse(runId, n);
+          }, n * 1000);
+          autoTimeoutIds.push(pulseId);
+        })(i);
+      }
+
+      var toNextCycle = setTimeout(function(){
+        runAutoCycle(runId, elapsedMs + AUTO_INHALE_MS + AUTO_EXHALE_MS);
+      }, AUTO_EXHALE_MS);
+      autoTimeoutIds.push(toNextCycle);
+
+    }, AUTO_INHALE_MS);
+    autoTimeoutIds.push(toExhale);
+  }
+
+  function startAuto(){
+    appState = 'auto';
+    autoRunId += 1;
+    runAutoCycle(autoRunId, 0);
+  }
+
+  function startManual(runId){
+    if (runId !== autoRunId) return;
+    appState = 'manual';
+    phaseIndex = 0;
+    countInPhase = 0;
+    breathTapCount = 0;
+    lastCountedWarmupTap = 0;
+    vibrate(VIBE_PHASE_CHANGE);
+    render();
+  }
+
+  function resetToIdle(){
+    clearAutoTimers();
+    autoRunId += 1; // invalidiert alle noch laufenden Auto-Timeouts
+    appState = 'idle';
+    phaseIndex = 0;
+    countInPhase = 0;
+    breathTapCount = 0;
+    lastCountedWarmupTap = 0;
+    renderIdle();
+  }
+
   function handleTap(e){
     e.preventDefault();
+
+    if (appState === 'idle'){
+      knockPulse();
+      vibrate(VIBE_TAP);
+      startAuto();
+      return;
+    }
+
+    if (appState === 'auto'){
+      // Sequenz läuft von selbst — Taps werden während dieser Phase ignoriert.
+      return;
+    }
+
+    // appState === 'manual': bisheriger, tap-gesteuerter Ablauf.
     var phase = PHASES[phaseIndex];
     var now = Date.now();
 
@@ -336,17 +491,13 @@
   endBtn.addEventListener('pointerdown', function(e){
     e.preventDefault();
     e.stopPropagation();
-    phaseIndex = 0;
-    countInPhase = 0;
-    breathTapCount = 0;
-    lastCountedWarmupTap = 0;
-    render();
+    resetToIdle();
   });
 
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   document.addEventListener('dblclick', function(e){ e.preventDefault(); });
 
-  render();
+  renderIdle();
 })();
 </script>
 </body>
