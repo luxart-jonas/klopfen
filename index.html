@@ -442,8 +442,10 @@
     e.preventDefault();
 
     if (appState === 'idle'){
-      knockPulse();
-      vibrate(VIBE_TAP);
+      // Kein separates Tap-Feedback hier: runInhale() (in startAuto) liefert
+      // sofort Vibration + Animation. Ein zusätzlicher vibrate()-Aufruf direkt
+      // davor lässt manche Handys (v.a. Android) den zweiten, unmittelbar
+      // folgenden Aufruf verwerfen — das erste Dauerrasseln würde stumm bleiben.
       startAuto();
       return;
     }
